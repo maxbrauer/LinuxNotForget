@@ -1,0 +1,231 @@
+# ---------------------------------------------------------------
+#NTP
+		ntpdate -u cronos.cenam.mx
+
+#SSH   /etc/ssh/sshd_config
+		Port 9292
+		Protocol 2
+		PermitRootLogin no
+		DebianBanner no
+		AllowUsers username
+
+#PHPSEC /etc/php5/apache2/php.ini
+			display_errors 	= Off 
+			expose_php 	= Off 
+			display_startup_errors = Off 
+			log_errors = On 
+			error_reporting = E_ALL 
+			magic_quotes_gpc = On 
+			magic_quotes_sybase = Off 
+			register_globals = Off
+			safe_mode = On
+			safe_mode_gid = On
+			safe_mode_include_dir = /path/to/dir
+			safe_mode_exec_dir = /path/to/exec/dir
+			file_uploads = Off
+			upload_max_filezize = 2M
+			upload_tmp_dir = /var/php_tmp
+			session.save_path = /var/lib/php
+			session.cookie_httponly = 1
+
+			disable_functions = php_uname, getmyuid, getmypid, passthru, leak, listen, diskfreespace, tmpfile, link, ignore_user_abord, shell_exec, dl, set_time_limit, exec, system, highlight_file, source, show_source, fpaththru, virtual, posix_ctermid, posix_getcwd, posix_getegid, posix_geteuid, posix_getgid, posix_getgrgid, posix_getgrnam, posix_getgroups, posix_getlogin, posix_getpgid, posix_getpgrp, posix_getpid, posix, _getppid, posix_getpwnam, posix_getpwuid, posix_getrlimit, posix_getsid, posix_getuid, posix_isatty, posix_kill, posix_mkfifo, posix_setegid, posix_seteuid, posix_setgid, posix_setpgid, posix_setsid, posix_setuid, posix_times, posix_ttyname, posix_uname, proc_open, proc_close, proc_get_status, proc_nice, proc_terminate, phpinfo
+
+		#/etc/php.d/security.ini
+			track_errors = Off
+			html_errors = Off
+			file_uploads=Off
+			upload_max_filesize=0M
+			allow_url_fopen=Off
+			allow_url_include = Off			
+			post_max_size=0M
+			max_execution_time =  30
+			max_input_time = 30M
+			memory_limit = 12M
+			error_log=/var/log/php_scripts_error.log
+			session.cookie_httponly = 1
+			session.referer_check = your_url.tld
+
+# PROTECT PHPMYADMIN SECURITY
+		htpasswd -c /home/accesos/.config  MaximO  m4xm4xm4x
+	    pico /usr/share/phpmyadmin/.htaccess
+			AuthType Basic
+			AuthName "Restricted Files"
+			AuthUserFile /home/accesos/.config
+			Require valid-user
+
+# APACHE
+		echo "ServerName localhost" >> /etc/apache2/apache2.conf
+		#/etc/apache2/conf.d/security
+			ServerTokens Prod
+			ServerSignature Off
+			TraceEnable Off
+			Header unset ETag
+			FileETag None
+			
+		#Module Security
+		<IfModule mod_security.c>
+			SecFilterEngine On
+			SecFilterCheckURLEncoding On
+			SecFilterCheckUnicodeEncoding Off
+			SecFilterForceByteRange 0 255
+			SecAuditEngine RelevantOnly
+			SecAuditLog /var/log/httpd/audit_log
+			SecFilterDebugLog /var/log/httpd/modsec_debug_log
+			SecFilterDebugLevel 0
+			SecFilterScanPOST On
+			SecFilterDefaultAction "deny,log,status:500"
+			SecFilter "delete[[:space:]]+from" log,redirect:http://google.com
+			SecFilter "insert[[:space:]]+into"
+			SecFilter "select.+from"
+			SecFilter "drop[[:space:]]table"
+			SecFilter "<script"
+			SecFilter "<.+>"
+			SecFilter "../"
+			SecFilter /etc/
+		</IfModule>
+		<IfModule mod_evasive20.c>
+			DOSHashTableSize 3097
+			DOSPageCount 2
+			DOSSiteCount 50
+			DOSPageInterval 1
+			DOSSiteInterval 1
+			DOSBlockingPeriod 300
+			DOSEmailNotify mailx@gmail.com
+		</IfModule>
+
+# MALWARE & SPYWARE
+		rkhunter --update
+		rkhunter --propupd
+		rkhunter --check
+
+# FIREWALL
+		sudo ufw enable
+		sudo ufw allow ssh
+		sudo ufw allow http
+		sudo ufw allow ftp
+
+# VSFTPD
+		echo "listen_port=2525">>/etc/vsftpd.conf
+		echo "local_enable=YES">>/etc/vsftpd.conf
+		echo "write_enable=YES">>/etc/vsftpd.conf
+		echo "chroot_local_user=NO">>/etc/vsftpd.conf
+		echo "chroot_list_enable=YES">>/etc/vsftpd.conf
+		echo "allow_writeable_chroot=YES">>/etc/vsftpd.conf
+		echo "chroot_list_file=/etc/vsftpd.chroot_list">>/etc/vsftpd.conf
+		touch /etc/vsftpd.chroot_list
+		echo "user">>/etc/vsftpd.chroot_list
+		mkdir -p /bin/ftp
+		echo "/bin/ftp">>/etc/shells
+		sudo useradd -g ftp -d /cloud  -s /bin/ftp  -c "produccion" user
+		passwd user
+		chown aplic4tivosProd:ftp /cloud
+
+# FAIL2BAN
+		#/etc/FAIL2BAN/FAIL2BAN.CONF
+		cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+		[DEFAULT]
+		bantime  = 600
+		findtime = 600
+		[vsftpd]
+		enabled  = false
+		port     = ftp
+		filter   = vsftpd
+		logpath  = /var/log/auth.log
+		maxretry = 5
+		[apache]
+		enabled = true
+		port    = http
+		filter  = apache-auth
+		logpath = /var/log/apache*/*error.log
+		maxretry = 5
+		[ssh]
+		enabled = true
+		port    = ssh
+		filter  = sshd
+		logpath  = /var/log/auth.log
+		maxretry = 5
+		[ssh-iptables]
+		enabled  = true
+		filter   = sshd
+		action   = iptables[name=SSH, port=ssh, protocol=tcp]
+		           sendmail-whois[name=SSH, dest=maxbrauer@gmail.com]
+		logpath  = /var/log/secure
+		maxretry = 5
+ 	
+# IPTABLES
+		#Clear old Rules
+		iptables -F 																					# Delete all existing rules
+		iptables -P INPUT DROP																			# Set default chain policies to DROP
+		iptables -P FORWARD DROP																		# Set default chain policies to DROP
+		iptables -P OUTPUT DROP																			# Set default chain policies to DROP
+		iptables -A INPUT -i lo -j ACCEPT																# Allow loopback access from INPUT
+		iptables -A OUTPUT -o lo -j ACCEPT																# Allow loopback access from Output
+		iptables -A INPUT -s "BLOCK_THIS_IP" -j DROP													# Block a specific ip-address
+		iptables -A INPUT -s 127.0.0.1/32 -j ACCEPT														# Allow Anything from localhost 	
+		iptables -A INPUT -s "ALLOW_THIS_IP"/32 -j ACCEPT												# Allow Anything from KeyServer
+		iptables -A INPUT -m state --state NEW -p tcp --dport 80 -j ACCEPT 								## allow everyone to access port 80 and 443 (IPv4 Only)##
+		iptables -A INPUT -m state --state NEW -p tcp --dport 443 -j ACCEPT
+		iptables -A OUTPUT -o eth0 -p tcp --sport 25 -m state --state ESTABLISHED -j ACCEPT				# PORT 25   SMTP   - Allow connections to outbound
+		iptables -A OUTPUT -p udp -o eth0 --dport 53 -j ACCEPT											# PORT 54   DNS    - Allow connections to outbound 
+		iptables -A INPUT -p tcp -m tcp --dport 80 -m state --state NEW,ESTABLISHED -j ACCEPT			# PORT 80   httpd  - Allow connections from anywhere
+		iptables -A INPUT -p tcp --dport 80 -m limit --limit 25/minute --limit-burst 100 -j ACCEPT		# PORT 80   httpd  - Rate Limit from outside
+		iptables -A INPUT -p tcp -m tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT			# PORT 443  SSL    - Allow connections from anywhere
+		iptables -A INPUT -p tcp -m tcp --dport 2082 -m state --state NEW,ESTABLISHED -j ACCEPT			# PORT 2082 cPanel - Allow connections to outbound 
+		iptables -A INPUT -p tcp -m tcp --dport 2083 -m state --state NEW,ESTABLISHED -j ACCEPT			# PORT 2083 cPanel - Allow connections to outbound 
+		iptables -A INPUT -p tcp -m tcp --dport 2086 -m state --state NEW,ESTABLISHED -j ACCEPT			# PORT 2086 WHM    - Allow connections to outbound 
+		iptables -A INPUT -p tcp -m tcp --dport 2087 -m state --state NEW,ESTABLISHED -j ACCEPT			# PORT 2087 WHM    - Allow connections to outbound 
+		iptables -A INPUT -p icmp -m icmp --icmp-type address-mask-request -j DROP						# Drop Ping from address-mask-request
+		iptables -A INPUT -p icmp -m icmp --icmp-type timestamp-request -j DROP							# Drop Ping from timestamp-request
+		iptables -A INPUT -p icmp -m icmp -m limit --limit 1/second -j ACCEPT 							# Rate Limit Ping from outside 
+		iptables -A INPUT   -m state --state INVALID -j DROP											# Drop invalid packets 
+		iptables -A FORWARD -m state --state INVALID -j DROP											# Drop invalid packets 
+		iptables -A OUTPUT  -m state --state INVALID -j DROP											# Drop invalid packets 
+		iptables -A INPUT -p tcp -m tcp --tcp-flags SYN,FIN SYN,FIN -j DROP								# Drop TCP - SYN,FIN packets 
+		iptables -A INPUT -p tcp -m tcp --tcp-flags SYN,RST SYN,RST -j DROP								# Drop TCP - SYN,RST packets 
+		iptables -A INPUT -s 10.0.0.0/8       -j DROP													# (Spoofed network)
+		iptables -a INPUT -s 192.0.0.1/24     -j DROP													# (Spoofed network)
+		iptables -A INPUT -s 169.254.0.0/16   -j DROP													# (Spoofed network)
+		iptables -A INPUT -s 172.16.0.0/12    -j DROP													# (Spoofed network)
+		iptables -A INPUT -s 224.0.0.0/4      -j DROP													# (Spoofed network)
+		iptables -A INPUT -d 224.0.0.0/4      -j DROP													# (Spoofed network)
+		iptables -A INPUT -s 240.0.0.0/5      -j DROP													# (Spoofed network)
+		iptables -A INPUT -d 240.0.0.0/5      -j DROP													# (Spoofed network)
+		iptables -A INPUT -s 0.0.0.0/8        -j DROP													# (Spoofed network)
+		iptables -A INPUT -d 0.0.0.0/8        -j DROP													# (Spoofed network)
+		iptables -A INPUT -d 239.255.255.0/24 -j DROP													# (Spoofed network)
+		iptables -A INPUT -d 255.255.255.255  -j DROP													# (Spoofed network)
+		iptables -A INPUT -p tcp -m multiport --dports 20,21 -m state --state NEW -m recent --set --name FTP_BRUTE        # FTP_BRUTE CHAIN
+		iptables -A INPUT -p tcp -m multiport --dports 20,21 -m state --state NEW -m recent --update --seconds 60 --hitcount 4 --rttl --name FTP_BRUTE -j DROP
+		iptables -A INPUT -m state --state NEW -p tcp -m tcp --syn -m recent --name SYNFLOOD--set						
+		iptables -A INPUT -m state --state NEW -p tcp -m tcp --syn -m recent --name SYNFLOOD --update --seconds 1 --hitcount 60 -j DROP
+		iptables -N LOGGING																							# Create `LOGGING` chain for logging denied packets
+		iptables -A INPUT -j LOGGING																				# Create `LOGGING` chain for logging denied packets 	
+		iptables -A LOGGING -m limit --limit 2/min -j LOG --log-prefix "IPTables Packet Dropped: " --log-level 6	# Log denied packets to /var/log/messages
+		iptables -A LOGGING -j DROP
+
+# NEW RELIC
+		echo deb http://apt.newrelic.com/debian/ newrelic non-free >> /etc/apt/sources.list.d/newrelic.list
+		wget -O- https://download.newrelic.com/548C16BF.gpg | apt-key add -
+		apt-get update
+		apt-get install newrelic-sysmond
+		nrsysmond-config --set license_key=xxxxxxxxxxxxxxxxxxxxxx
+		/etc/init.d/newrelic-sysmond start
+		#Note: The configuration file is located at /etc/newrelic/nrsysmond.cfg and contains the license key and location for the log file: /var/log/newrelic/nrsysmond.log
+		API KEY : xxxxxxxxxxxxxxxxxxxxxx
+		sudo rpm -Uvh http://yum.newrelic.com/pub/newrelic/el5/i386/newrelic-repo-5-3.noarch.rpm
+		sudo rpm -Uvh http://yum.newrelic.com/pub/newrelic/el5/x86_64/newrelic-repo-5-3.noarch.rpm
+		sudo yum install newrelic-php5
+		sudo newrelic-install install
+		#To manually edit your php.ini file: Add the following line to your php.ini file:
+		newrelic.license="xxxxxxxxxxxxxxxxxxxxxx"
+
+# PROTECT FILES
+		chattr +i /etc/php5/apache2/php.ini
+		chattr +i /etc/apache2/apache2.conf
+		chattr +i /etc/php5/php.d/*
+		chattr +i /etc/my.ini
+		chattr +i /etc/
+
+# REINICIAR SERVICIOS
+		service apache2 restart
+		reboot

@@ -1,0 +1,25 @@
+/*
+
+	Server Hosting
+
+*/
+
+apt-get -y update  && apt-get -y upgrade
+
+wget http://repo.ajenti.org/debian/key -O- | apt-key add -
+echo "deb http://repo.ajenti.org/debian main main debian" >> /etc/apt/sources.list
+apt-get update && apt-get install ajenti
+service ajenti restart
+
+apt-get -y install  curl
+apt-get -y install  php5-cgi php5 php5-cli php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt 
+apt-get -y install  php5-memcache php-pear php-auth php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc  
+apt-get -y install  php5-xsl php5-xcache php5-ffmpeg php5-common php5-gd libapache2-mod-php5
+apt-get -y install  apache2-utils apache2 apache2-doc apache2-mpm-prefork apache2-utils
+apt-get -y install  libapache2-modsecurity libapache2-mod-evasive
+apt-get -y install  openssl rkhunter ntp postfix postfix-mysql postfix-doc nmap tcpdump unzip rsync mutt
+apt-get -y install  python python2.7  libapache2-mod-python
+apt-get -y install  quota quotatool vlogger webalizer awstats ufw  phpmyadmin  htop ntpdate mtr fail2ban snmpd vsftpd
+a2enmod rewrite ssl mod-security mod-evasive headers
+sudo apt-get install vsftpd=2.3.5-3
+
