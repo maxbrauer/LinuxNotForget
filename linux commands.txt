@@ -755,5 +755,7 @@ info
 	pwd
 
 
+wget --mirror --convert-links --adjust-extension --page-requisites --no-parent --execute robots=off http://site.com
+
 
 
